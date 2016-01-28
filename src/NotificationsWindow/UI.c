@@ -13,6 +13,7 @@ typedef struct
 {
     char* text;
     GFont font;
+    bool wordWrap;
     GRect bounds;
 #if PBL_SDK_3
     GTextAttributes* attributes;
@@ -45,6 +46,13 @@ TextParameters body;
 
 static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
 {
+    GTextOverflowMode overflowMode = textBox->wordWrap ? GTextOverflowModeWordWrap : GTextOverflowModeTrailingEllipsis;
+
+    // We're only looking for the total height of the text, so if wordWrap is false, then we measure
+    // just a single character to get the height of a line with the current font.
+    // If wordWrap is true, then we measure the whole text in order to find it's word-wrapped height.
+    char* text = textBox->wordWrap ? textBox->text : "O";
+  
     #ifdef PBL_SDK_3
         if (config_scrollByPage)
         {
@@ -52,9 +60,9 @@ static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
             graphics_text_attributes_enable_paging(textBox->attributes, textOriginPointOnScreen, textAreaFrame);
         }
 
-        textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes).h);
+        textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), overflowMode, TEXT_ALIGNMENT, textBox->attributes).h);
     #else
-        textBox->bounds.size =  GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT).h);
+        textBox->bounds.size =  GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size(text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), overflowMode, TEXT_ALIGNMENT).h);
     #endif
 }
 
@@ -74,8 +82,11 @@ void nw_ui_refresh_notification(void)
         notification = NULL;
 
         title.font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+        title.wordWrap = true;
         subtitle.font = title.font;
+        subtitle.wordWrap = true;
         body.font = title.font;
+        body.wordWrap = true;
     }
     else
     {
@@ -89,8 +100,11 @@ void nw_ui_refresh_notification(void)
             bodyText = &notification->text[notification->bodyStart];
 
         title.font = fonts_get_system_font(config_getFontResource(notification->fontTitle));
+        title.wordWrap = notification->wordWrapTitle;
         subtitle.font = fonts_get_system_font(config_getFontResource(notification->fontSubtitle));
+        subtitle.wordWrap = notification->wordWrapSubtitle;
         body.font = fonts_get_system_font(config_getFontResource(notification->fontBody));
+        body.wordWrap = true;
 
     #ifdef PBL_COLOR
         if (notification->imageSize > 0)
@@ -132,13 +146,16 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
 {
     graphics_context_set_text_color(ctx, GColorBlack);
 
+    GTextOverflowMode titleOverflowMode = title.wordWrap ? GTextOverflowModeWordWrap : GTextOverflowModeTrailingEllipsis;
+    GTextOverflowMode subtitleOverflowMode = subtitle.wordWrap ? GTextOverflowModeWordWrap : GTextOverflowModeTrailingEllipsis;
+    
     #ifdef PBL_SDK_3
-        graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
-        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
+        graphics_draw_text(ctx, title.text, title.font, title.bounds, titleOverflowMode, TEXT_ALIGNMENT, title.attributes);
+        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, subtitleOverflowMode, TEXT_ALIGNMENT, subtitle.attributes);
         graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
     #else
-    graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
-        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
+        graphics_draw_text(ctx, title.text, title.font, title.bounds, titleOverflowMode, TEXT_ALIGNMENT, NULL);
+        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, subtitleOverflowMode, TEXT_ALIGNMENT, NULL);
         graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
     #endif
 

@@ -18,6 +18,8 @@ typedef struct
     bool onlyDismissable;
     bool showMenuOnSelectPress;
     bool showMenuOnSelectHold;
+    bool wordWrapTitle;
+    bool wordWrapSubtitle;
     uint8_t shakeAction;
     uint8_t numOfActionsInDefaultMenu;
     uint8_t fontTitle;

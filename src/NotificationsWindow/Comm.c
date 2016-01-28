@@ -146,6 +146,8 @@ static void received_message_new_notification(DictionaryIterator *received)
     notification->scrollToEnd = (flags & 0x08) != 0;
     notification->showMenuOnSelectPress = (flags & 0x10) != 0;
     notification->showMenuOnSelectHold = (flags & 0x20) != 0;
+    notification->wordWrapTitle = (flags & 0x40) != 0;
+    notification->wordWrapSubtitle = (flags & 0x80) != 0;
     notification->shakeAction = configBytes[6];
     notification->numOfActionsInDefaultMenu = configBytes[3];
     notification->subtitleStart = configBytes[13] << 8 | configBytes[14];
@@ -156,7 +158,6 @@ static void received_message_new_notification(DictionaryIterator *received)
     notification->onlyDismissable = false;
     notification->currentTextLength = 0;
     notification->text[0] = 0;
-
 
 #ifdef PBL_COLOR
     notification->notificationColor = (GColor8) {.argb = configBytes[10]};
